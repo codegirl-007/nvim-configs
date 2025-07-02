@@ -172,6 +172,7 @@ vim.opt.confirm = true
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { noremap = true, silent = true, desc = 'Go to definition' })
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
@@ -211,7 +212,14 @@ end, { desc = 'Repo Status Modal' })
 
 vim.keymap.set('n', 'gt', function()
   require('go_test_modal').run_go_test()
-end)
+end, { desc = '[G]o [T]est Modal' })
+
+require('todo_finder').setup()
+
+-- Keymap to run semgrep on current file
+vim.keymap.set('n', '<leader>fe', function()
+  require('semgrep_smells').run_semgrep()
+end, { desc = 'Run Semgrep smell check' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
