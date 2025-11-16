@@ -96,7 +96,7 @@ vim.opt.autoindent = true -- Copy indent from previous line
 vim.opt.smartindent = true -- Add extra indent after {
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -166,6 +166,13 @@ vim.opt.scrolloff = 10
 -- See `:help 'confirm'`
 vim.opt.confirm = true
 
+-- Code folding configuration
+vim.opt.foldmethod = 'expr'
+vim.opt.foldexpr = 'nvim_treesitter#foldexpr()'
+vim.opt.foldlevel = 99 -- Start with all folds open
+vim.opt.foldlevelstart = 99
+vim.opt.foldenable = true
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -176,6 +183,33 @@ vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { noremap = true, silent = tru
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
+vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
+vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
+
+-- Quickfix navigation
+vim.keymap.set('n', '[q', '<cmd>cprevious<CR>', { desc = 'Previous [Q]uickfix item' })
+vim.keymap.set('n', ']q', '<cmd>cnext<CR>', { desc = 'Next [Q]uickfix item' })
+vim.keymap.set('n', '<leader>qo', '<cmd>copen<CR>', { desc = '[Q]uickfix [O]pen' })
+vim.keymap.set('n', '<leader>qc', '<cmd>cclose<CR>', { desc = '[Q]uickfix [C]lose' })
+
+-- Location list navigation
+vim.keymap.set('n', '[l', '<cmd>lprevious<CR>', { desc = 'Previous [L]ocation list item' })
+vim.keymap.set('n', ']l', '<cmd>lnext<CR>', { desc = 'Next [L]ocation list item' })
+vim.keymap.set('n', '<leader>lo', '<cmd>lopen<CR>', { desc = '[L]ocation list [O]pen' })
+vim.keymap.set('n', '<leader>lc', '<cmd>lclose<CR>', { desc = '[L]ocation list [C]lose' })
+
+-- Code folding keybindings
+vim.keymap.set('n', 'zR', '<cmd>lua vim.opt.foldlevel = 99<CR>', { desc = 'Open all folds' })
+vim.keymap.set('n', 'zM', '<cmd>lua vim.opt.foldlevel = 0<CR>', { desc = 'Close all folds' })
+vim.keymap.set('n', '<leader>zf', 'zfip', { desc = '[Z]ip [F]old paragraph' })
+vim.keymap.set('v', '<leader>zf', 'zf', { desc = '[Z]ip [F]fold selection' })
+
+-- Enhanced search and replace workflows
+vim.keymap.set('n', '<leader>*', '*<cmd>lua vim.fn.setreg("/", vim.fn.expand("<cword>"))<CR>', { desc = 'Search word under cursor' })
+vim.keymap.set('n', '<leader>/', '<cmd>let @/=""<CR>', { desc = 'Clear search highlight' })
+vim.keymap.set('n', '<leader>ss', ':%s/<C-r><C-w>//g<Left><Left>', { desc = '[S]ubstitute word under cursor' })
+vim.keymap.set('v', '<leader>ss', ':s///g<Left><Left><Left>', { desc = '[S]ubstitute in selection' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -184,6 +218,17 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+
+-- Better terminal workflow
+vim.keymap.set('n', '<leader>tt', '<cmd>terminal<CR>', { desc = '[T]erminal [T]oggle' })
+vim.keymap.set('n', '<leader>tv', '<cmd>vsplit | terminal<CR>', { desc = '[T]erminal [V]ertical split' })
+vim.keymap.set('n', '<leader>th', '<cmd>split | terminal<CR>', { desc = '[T]erminal [H]orizontal split' })
+
+-- Terminal navigation
+vim.keymap.set('t', '<C-h>', '<C-\\><C-n><C-w>h', { desc = 'Terminal: Move to left window' })
+vim.keymap.set('t', '<C-j>', '<C-\\><C-n><C-w>j', { desc = 'Terminal: Move to lower window' })
+vim.keymap.set('t', '<C-k>', '<C-\\><C-n><C-w>k', { desc = 'Terminal: Move to upper window' })
+vim.keymap.set('t', '<C-l>', '<C-\\><C-n><C-w>l', { desc = 'Terminal: Move to right window' })
 
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
@@ -234,6 +279,50 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.highlight.on_yank()
   end,
 })
+
+-- Enable spell checking for specific file types
+vim.api.nvim_create_autocmd('FileType', {
+  desc = 'Enable spell checking for documentation files',
+  group = vim.api.nvim_create_augroup('spell-check', { clear = true }),
+  pattern = { 'markdown', 'text', 'gitcommit' },
+  callback = function()
+    vim.opt_local.spell = true
+    vim.opt_local.spelllang = 'en_us'
+  end,
+})
+
+-- Better file type detection
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  desc = 'Set file types for specific patterns',
+  group = vim.api.nvim_create_augroup('filetype-detection', { clear = true }),
+  callback = function()
+    local filename = vim.fn.expand('%:t')
+    local filepath = vim.fn.expand('%:p')
+    
+    -- Docker files
+    if filename:match('^Dockerfile') or filename:match('%.dockerfile$') then
+      vim.bo.filetype = 'dockerfile'
+    -- Environment files
+    elseif filename:match('^%.env') then
+      vim.bo.filetype = 'sh'
+    -- Config files
+    elseif filename:match('%.config$') or filename:match('%.conf$') then
+      vim.bo.filetype = 'conf'
+    -- JSON with comments (jsonc)
+    elseif filename:match('tsconfig%.json$') or filename:match('%.jsonc$') then
+      vim.bo.filetype = 'jsonc'
+    end
+  end,
+})
+
+-- Improve built-in notification display
+local original_notify = vim.notify
+vim.notify = function(msg, level, opts)
+  opts = opts or {}
+  opts.title = opts.title or 'Neovim'
+  -- Use original vim.notify with better formatting
+  return original_notify(msg, level, opts)
+end
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
@@ -419,13 +508,41 @@ require('lazy').setup({
       require('telescope').setup {
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
-        --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
-        -- pickers = {}
+        defaults = {
+          mappings = {
+            i = { 
+              ['<c-enter>'] = 'to_fuzzy_refine',
+              ['<C-u>'] = false,
+              ['<C-d>'] = false,
+            },
+            n = {
+              ['<C-c>'] = 'close',
+            },
+          },
+          file_ignore_patterns = {
+            'node_modules',
+            '.git/',
+            'dist/',
+            'build/',
+            '%.lock',
+          },
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+          },
+        },
+        pickers = {
+          find_files = {
+            hidden = true,
+            find_command = { 'rg', '--files', '--hidden', '--glob', '!**/.git/*' },
+          },
+          live_grep = {
+            additional_args = function()
+              return { '--hidden', '--glob', '!**/.git/*' }
+            end,
+          },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -472,6 +589,35 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function()
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
+
+      -- Buffer management keybindings
+      vim.keymap.set('n', '<leader>bd', '<cmd>bdelete<CR>', { desc = '[B]uffer [D]elete' })
+      vim.keymap.set('n', '<leader>bn', '<cmd>bnext<CR>', { desc = '[B]uffer [N]ext' })
+      vim.keymap.set('n', '<leader>bp', '<cmd>bprevious<CR>', { desc = '[B]uffer [P]revious' })
+
+      -- Enhanced code navigation
+      vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, { desc = '[C]ode [A]ctions' })
+      vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, { desc = '[R]e[n]ame symbol' })
+      vim.keymap.set('n', '<leader>ws', builtin.lsp_workspace_symbols, { desc = '[W]orkspace [S]ymbols' })
+
+      -- Project-wide search and replace
+      vim.keymap.set('n', '<leader>sr', function()
+        local search_term = vim.fn.input('Search for: ')
+        if search_term ~= '' then
+          local replace_term = vim.fn.input('Replace with: ')
+          if replace_term ~= '' then
+            vim.cmd('cfdo %s/' .. vim.fn.escape(search_term, '/') .. '/' .. vim.fn.escape(replace_term, '/') .. '/gc | update')
+          end
+        end
+      end, { desc = '[S]earch and [R]eplace project-wide' })
+
+      -- Search in project and populate quickfix
+      vim.keymap.set('n', '<leader>sp', function()
+        local search_term = vim.fn.input('Search project for: ')
+        if search_term ~= '' then
+          builtin.grep_string({ search = search_term })
+        end
+      end, { desc = '[S]earch [P]roject' })
     end,
   },
 
@@ -501,6 +647,9 @@ require('lazy').setup({
 
       -- Useful status updates for LSP.
       { 'j-hui/fidget.nvim', opts = {} },
+
+      -- JSON/YAML schema support
+      'b0o/schemastore.nvim',
 
       -- Allows extra capabilities provided by blink.cmp
       'saghen/blink.cmp',
@@ -694,8 +843,49 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
-        --
+        ts_ls = {},
+
+        -- HTML Language Server
+        html = {
+          filetypes = { 'html', 'htm' },
+        },
+
+        -- CSS Language Server
+        cssls = {
+          filetypes = { 'css', 'scss', 'less' },
+        },
+
+        -- JSON Language Server with schema support
+        jsonls = {
+          settings = {
+            json = {
+              schemas = require('schemastore').json.schemas(),
+              validate = { enable = true },
+            },
+          },
+        },
+
+        -- Markdown Language Server
+        marksman = {},
+
+        -- Bash Language Server
+        bashls = {},
+
+        -- YAML Language Server with OpenAPI support
+        yamlls = {
+          settings = {
+            yaml = {
+              schemaStore = {
+                -- You must disable built-in schemaStore support if you want to use
+                -- this plugin and its advanced options like `ignore`.
+                enable = false,
+                -- Avoid TypeError: Cannot read properties of undefined (reading 'length')
+                url = "",
+              },
+              schemas = require('schemastore').yaml.schemas(),
+            },
+          },
+        },
 
         lua_ls = {
           -- cmd = { ... },
@@ -729,6 +919,11 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'goimports', -- Go import organization
+        'gofumpt', -- Stricter Go formatting (alternative to gofmt)
+        'golangci-lint', -- Go linting
+        'eslint_d', -- Fast ESLint daemon for JavaScript/TypeScript
+        'prettierd', -- Fast Prettier daemon
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -781,11 +976,20 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        -- Go formatting
+        go = { 'goimports', 'gofumpt' },
+        -- HTML/CSS formatting
+        html = { 'prettierd', 'prettier', stop_after_first = true },
+        css = { 'prettierd', 'prettier', stop_after_first = true },
+        scss = { 'prettierd', 'prettier', stop_after_first = true },
+        less = { 'prettierd', 'prettier', stop_after_first = true },
+        -- JavaScript/TypeScript formatting with ESLint
+        javascript = { 'eslint_d', 'prettierd', 'prettier', stop_after_first = true },
+        typescript = { 'eslint_d', 'prettierd', 'prettier', stop_after_first = true },
+        javascriptreact = { 'eslint_d', 'prettierd', 'prettier', stop_after_first = true },
+        typescriptreact = { 'eslint_d', 'prettierd', 'prettier', stop_after_first = true },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
-        --
-        -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
       },
     },
   },
@@ -838,6 +1042,13 @@ require('lazy').setup({
 
       sources = {
         default = { 'lsp', 'path', 'lazydev' },
+        per_filetype = {
+          markdown = { 'lsp', 'path' },
+          gitcommit = { 'path' },
+          dockerfile = { 'lsp', 'path' },
+          yaml = { 'lsp', 'path' },
+          json = { 'lsp', 'path' },
+        },
         providers = {
           lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
         },
@@ -881,6 +1092,35 @@ require('lazy').setup({
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
+  -- Cursor Agent integration
+  {
+    'xTacobaco/cursor-agent.nvim',
+    config = function()
+      vim.keymap.set('n', '<leader>ca', ':CursorAgent<CR>', { desc = 'Cursor Agent: Toggle terminal' })
+      vim.keymap.set('v', '<leader>ca', ':CursorAgentSelection<CR>', { desc = 'Cursor Agent: Send selection' })
+      vim.keymap.set('n', '<leader>cA', ':CursorAgentBuffer<CR>', { desc = 'Cursor Agent: Send buffer' })
+    end,
+  },
+
+  -- Emmet for rapid HTML/CSS development
+  {
+    'mattn/emmet-vim',
+    ft = { 'html', 'css', 'scss', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact' },
+    config = function()
+      -- Enable Emmet for JSX/TSX files
+      vim.g.user_emmet_settings = {
+        javascript = {
+          extends = 'jsx',
+        },
+        typescript = {
+          extends = 'jsx',
+        },
+      }
+      -- Set Emmet leader key (default is <C-y>)
+      vim.g.user_emmet_leader_key = '<C-y>'
+    end,
+  },
+
   { -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
@@ -914,6 +1154,30 @@ require('lazy').setup({
         return '%2l:%-2v'
       end
 
+      -- Add git branch to statusline
+      ---@diagnostic disable-next-line: duplicate-set-field
+      statusline.section_git = function()
+        local head = vim.b.gitsigns_head or vim.g.gitsigns_head
+        if head and head ~= '' then
+          return (vim.g.have_nerd_font and ' ' or 'Git:') .. head
+        end
+        return ''
+      end
+
+      -- Add LSP status to statusline
+      ---@diagnostic disable-next-line: duplicate-set-field
+      statusline.section_lsp = function()
+        local clients = vim.lsp.get_clients({ bufnr = 0 })
+        if #clients == 0 then
+          return ''
+        end
+        local names = {}
+        for _, client in ipairs(clients) do
+          table.insert(names, client.name)
+        end
+        return (vim.g.have_nerd_font and ' ' or 'LSP:') .. table.concat(names, ',')
+      end
+
       -- ... and there is more!
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
@@ -924,7 +1188,7 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'css', 'scss', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'javascript', 'typescript', 'tsx', 'go', 'json', 'dockerfile' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -954,8 +1218,8 @@ require('lazy').setup({
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
   -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.lint',
   require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
