@@ -1073,34 +1073,47 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'rose-pine/neovim',
-    name = 'rose-pine',
+    'navarasu/onedark.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
-      require('rose-pine').setup {
-        styles = {
-          italic = false, -- Disable italics
+      require('onedark').setup({
+        style = 'darker', -- Choose between 'dark', 'darker', 'cool', 'deep', 'warm', 'warmer' and 'light'
+        transparent = false,
+        term_colors = true,
+        ending_tildes = false,
+        cmp_itemkind_reverse = false,
+        toggle_style_key = nil,
+        toggle_style_list = {'dark', 'darker', 'cool', 'deep', 'warm', 'warmer', 'light'},
+        code_style = {
+          comments = 'none', -- No italics for comments
+          keywords = 'none', -- No italics for keywords
+          functions = 'none',
+          strings = 'none',
+          variables = 'none'
         },
-      }
+        lualine = {
+          transparent = false, -- lualine center bar transparency
+        },
+        colors = {
+          bg0 = '#000000', -- Pure black background for maximum contrast
+        },
+        highlights = {},
+        diagnostics = {
+          darker = true, -- darker colors for diagnostic
+          undercurl = true,   -- use undercurl instead of underline for diagnostics
+          background = true,    -- use background color for virtual text
+        },
+      })
 
       -- Load the colorscheme here.
-      -- Rose Pine variants: 'rose-pine', 'rose-pine-main', 'rose-pine-moon', 'rose-pine-dawn'
-      vim.cmd.colorscheme 'rose-pine'
+      -- OneDark variants: 'onedark' (with different styles: darker, dark, cool, deep, warm, warmer, light)
+      vim.cmd.colorscheme 'onedark'
     end,
   },
 
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
 
-  -- Cursor Agent integration
-  {
-    'xTacobaco/cursor-agent.nvim',
-    config = function()
-      vim.keymap.set('n', '<leader>ca', ':CursorAgent<CR>', { desc = 'Cursor Agent: Toggle terminal' })
-      vim.keymap.set('v', '<leader>ca', ':CursorAgentSelection<CR>', { desc = 'Cursor Agent: Send selection' })
-      vim.keymap.set('n', '<leader>cA', ':CursorAgentBuffer<CR>', { desc = 'Cursor Agent: Send buffer' })
-    end,
-  },
 
   -- Emmet for rapid HTML/CSS development
   {
@@ -1184,13 +1197,13 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
-    build = ':TSUpdate',
+    -- build = ':TSUpdate', -- Disabled to prevent auto-reinstallation
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'css', 'scss', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'javascript', 'typescript', 'tsx', 'go', 'json', 'dockerfile' },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
+      -- Completely disable automatic parser installation
+      -- ensure_installed = {}, -- Removed to prevent any auto-installation
+      auto_install = false,
       highlight = {
         enable = true,
         -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
@@ -1228,7 +1241,7 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
